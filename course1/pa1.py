@@ -43,19 +43,16 @@ def karatsuba(intX, intY):
     if digsX < 2 or digsY < 2:
         return int(intX) * int(intY)
 
-    m, x1, x0, y1, y0 = 0, 0, 0, 0, 0
+    m = 0
     if digsX <= digsY:
-        m = digsX - 1
-        x1 = intX[:1]
-        x0 = intX[1:]
-        y1 = intY[:(len(intY) - m)]
-        y0 = intY[(len(intY) - m):]
+        m = digsX // 2
     else:
-        m = digsY - 1
-        y1 = intY[:1]
-        y0 = intY[1:]
-        x1 = intX[:(len(intX) - m)]
-        x0 = intX[(len(intX) - m):]
+        m = digsY // 2
+
+    x1 = intX[:(len(intX) - m)]
+    x0 = intX[(len(intX) - m):]
+    y1 = intY[:(len(intY) - m)]
+    y0 = intY[(len(intY) - m):]
     
     z2 = karatsuba(x1, y1)
     z0 = karatsuba(x0, y0)
@@ -69,7 +66,5 @@ def testResult(intX, intY):
 if __name__ == '__main__':
     intA = '3141592653589793238462643383279502884197169399375105820974944592'
     intB = '2718281828459045235360287471352662497757247093699959574966967627'
-    intA = '123456789121212121212'
-    intB = '6789012345343434343434'
     print(testResult(intA, intB))
     print(karatsuba(intA, intB))
