@@ -35,6 +35,14 @@ language you want --- just type the final numeric answer in the following
 space.)
 '''
 
+'''
+Implements Karatsuba's algorithm recursively.
+See https://en.wikipedia.org/wiki/Karatsuba_algorithm for details.
+
+intX string representation of first integer
+intY string representation of second integer
+returns integer result
+'''
 def karatsuba(intX, intY):
     digsX = len(intX)
     digsY = len(intY)
