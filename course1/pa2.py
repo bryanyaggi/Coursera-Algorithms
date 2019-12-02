@@ -29,6 +29,12 @@ def readFile(filename):
     array = [int(x) for x in array]
     return array
 
+'''
+Sorts integers and counts inversions using merge sort algorithm.
+
+array is a list of integers
+returns list of sorted integers and number of inversions
+'''
 def sortAndCount(array):
     if len(array) <= 1:
         return array, 0
@@ -42,6 +48,13 @@ def sortAndCount(array):
 
     return array, leftCount + rightCount + mergeCount
 
+'''
+Merges halves of array counting inversions.
+
+left is left half of integer list
+right is right half of integer list
+returns list of sorted integers and number of inversions
+'''
 def mergeAndCount(left, right):
     array = [0] * (len(left) + len(right))
     i, j, count = 0, 0, 0
@@ -65,6 +78,12 @@ def mergeAndCount(left, right):
 
     return array, count
 
+'''
+Counts inversions using brute force approach.
+
+array is list of integers
+returns number of inversions
+'''
 def testResult(array):
     inversions = 0
     for i in range(len(array)):
