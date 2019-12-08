@@ -120,13 +120,11 @@ returns index of pivot element
 '''
 def choosePivotMedianOfThree(array, l, r):
     m = l + ((r - l) // 2)
-    candidates = [array[l], array[m], array[r]]
-    index = candidates.index(statistics.median(candidates))
-    if index == 0:
-        return l
-    elif index == 1:
-        return m
-    return r
+    indices = [l, m, r]
+    candidates = []
+    for index in indices:
+        candidates.append(array[index])
+    return indices[candidates.index(statistics.median(candidates))]
 
 '''
 Partitions array around the pivot element
