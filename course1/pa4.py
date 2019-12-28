@@ -40,6 +40,15 @@ def readFile(filename):
     edges /= 2
     return graph, edges
 
+'''
+Contract random edge until 2 nodes left. Returns number of edges between 2
+nodes.
+
+graph is the dictionary representation of the graph
+edges is the number of edges
+verbose prints information for each contract iteration
+returns number of edges between final 2 nodes
+'''
 def contract(graph, edges, verbose=False):
     graph = copy.deepcopy(graph)
 
@@ -48,15 +57,14 @@ def contract(graph, edges, verbose=False):
         edgeIndex = random.randint(0, 2*edges)
 
         # Find vertices of selected edge
-        
         for key in graph.keys():
             if edgeIndex < len(graph[key]):
                 break
             edgeIndex -= len(graph[key])
         vertices = [key, graph[key][edgeIndex]]
-        
 
         '''
+        # Randomly select node, then edge (not uniformly random among edges)
         vertices = []
         vertices.append(random.choice(list(graph.keys())))
         vertices.append(random.choice(list(graph[vertices[0]])))
@@ -89,9 +97,6 @@ def contract(graph, edges, verbose=False):
         print('edges = %s' %edges)
     
     return edges
-
-def testResult(graph):
-    return 0
 
 if __name__ == '__main__':
     graph, edges = readFile('KargerMinCut.txt')
