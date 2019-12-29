@@ -26,88 +26,159 @@ the smallest cut that you ever find.) Write your numeric answer in the space
 provided. So e.g., if your answer is 5, just type 5 in the space provided.
 '''
 
+'''
+Class to store parent and rank information for each node. Part of union-find
+data structure.
+'''
+class Subset:
+    def __init__(self, parent):
+        self.parent = parent
+        self.rank = 0
+
+    def __repr__(self):
+        return 'Subset(parent: %s, rank: %s)' %(self.parent, self.rank)
+
+'''
+Class to store graph information. Implements union-find data structure.
+'''
+class Graph:
+    def __init__(self):
+        self.numSubsets = 0
+        self.edges = []
+        self.subsets = []
+
+    def addNode(self):
+        self.subsets.append(Subset(self.numSubsets))
+        self.numSubsets += 1
+
+    def addEdge(self, srcNode, destNode):
+        self.edges.append((srcNode, destNode))
+
+    '''
+    Finds parent of given node.
+    '''
+    def find(self, node):
+        if self.subsets[node].parent != node:
+            self.subsets[node].parent = self.find(self.subsets[node].parent)
+        return self.subsets[node].parent
+
+    '''
+    Unifies 2 nodes by merging them into the same subset.
+    '''
+    def union(self, nodeA, nodeB):
+        parentA = self.find(nodeA)
+        parentB = self.find(nodeB)
+
+        if parentA == parentB:
+            return
+        if self.subsets[parentA].rank >= self.subsets[parentB].rank:
+            self.subsets[parentB].parent = parentA
+            if self.subsets[parentA].rank == self.subsets[parentB].rank:
+                self.subsets[parentA].rank += 1
+        else:
+            self.subsets[parentA].parent = parentB
+        self.numSubsets -= 1
+
+    '''
+    Counts cut edges between 2 subsets.
+    '''
+    def countCutEdges(self):
+        if self.numSubsets != 2:
+            return -1
+
+        cutEdges = 0
+        for i in range(len(graph.edges)):
+            if self.find(self.edges[i][0]) != self.find(self.edges[i][1]):
+                cutEdges += 1
+        return cutEdges / 2
+
+    
+    def __repr__(self):
+        return ('Graph(numSubsets: %s, edges: %s, subsets: %s)'
+                %(self.numSubsets, self.edges, self.subsets))
+
 def readFile(filename):
+    graph = Graph()
+
     with open(filename) as f:
         lines = f.readlines()
-    edges = 0
-    graph = {}
+
     for line in lines:
         line = line.split()
-        vertex = int(line[0])
-        adjVerts = [int(x) for x in line[1:]]
-        graph[vertex] = adjVerts
-        edges += len(adjVerts)
-    edges /= 2
-    return graph, edges
+        graph.addNode()
+        for node in line[1:]:
+            graph.addEdge(graph.numSubsets-1, int(node)-1)
+
+    return graph
 
 '''
-Contract random edge until 2 nodes left. Returns number of edges between 2
-nodes.
+Contract random edge until 2 subsets left. Returns number of edges between 2
+subsets.
 
-graph is the dictionary representation of the graph
-edges is the number of edges
+graph is an instance of Graph
 verbose prints information for each contract iteration
-returns number of edges between final 2 nodes
+returns number of edges between 2 subsets
 '''
-def contract(graph, edges, verbose=False):
-    graph = copy.deepcopy(graph)
+def contract(graph, verbose=False):
+    # Create randomly shuffled edge list
+    shuffledEdges = copy.deepcopy(graph.edges)
+    random.shuffle(shuffledEdges)
+    index = 0
 
-    while len(graph) > 2:
-        # Select random edge
-        edgeIndex = random.randint(0, 2*edges)
+    while graph.numSubsets > 2:
+        if index >= len(shuffledEdges):
+            print('ERROR: Not enough edges; cannot contract further.')
+            return -1
 
-        # Find vertices of selected edge
-        for key in graph.keys():
-            if edgeIndex < len(graph[key]):
-                break
-            edgeIndex -= len(graph[key])
-        vertices = [key, graph[key][edgeIndex]]
+        src, dest = shuffledEdges[index] # select random edge
+        index += 1
 
-        '''
-        # Randomly select node, then edge (not uniformly random among edges)
-        vertices = []
-        vertices.append(random.choice(list(graph.keys())))
-        vertices.append(random.choice(list(graph[vertices[0]])))
-        '''
-
-        if verbose:
-            print('graph = %s' %graph)
-            print('edges = %d' %edges)
-            print('edgeIndex = %d' %edgeIndex)
-            print('vertices = %s' %vertices)
-            print('%s' %(60*'-'))
-
-        # Keep first vertex, remove instances of second vertex in adjacent list
-        while vertices[1] in graph[vertices[0]]:
-            graph[vertices[0]].remove(vertices[1])
-            edges -= 1
-        # Merge adjacect vertices of second vertex into first
-        for adjVertex in graph[vertices[1]]:
-            if adjVertex != vertices[0]:
-                graph[vertices[0]].append(adjVertex)
-        graph.pop(vertices[1])
-        # Replace second vertex with first in graph adjacent lists
-        for key in graph.keys():
-            for i in range(len(graph[key])):
-                if graph[key][i] == vertices[1]:
-                    graph[key][i] = vertices[0]
+        graph.union(src, dest)
 
     if verbose:
-        print('graph = %s' %graph)
-        print('edges = %s' %edges)
-    
-    return edges
+        print(graph)
+
+    return graph.countCutEdges()
+
+def testGraph():
+    graph = Graph()
+
+    for i in range(4):
+        graph.addNode()
+
+    graph.addEdge(0,1)
+    graph.addEdge(0,2)
+    graph.addEdge(1,0)
+    graph.addEdge(1,2)
+    graph.addEdge(1,3)
+    graph.addEdge(2,0)
+    graph.addEdge(2,1)
+    graph.addEdge(2,3)
+    graph.addEdge(3,1)
+    graph.addEdge(3,2)
+
+    return graph
 
 if __name__ == '__main__':
-    graph, edges = readFile('KargerMinCut.txt')
-    '''
-    graph = {1:[2,3], 2:[1,3,4], 3:[1,2,4], 4:[2,3]}
-    edges = 5
-    '''
+    graph = readFile('KargerMinCut.txt')
+    #graph = testGraph()
+    #print(graph)
+
+    numSubsets = graph.numSubsets
+    subsets = copy.deepcopy(graph.subsets)
     results = []
+    iterations = 200
     t0 = time.time()
-    for i in range(200):
-        results.append(contract(graph, edges))
+    for i in range(iterations):
+        # Reset modified graph data
+        graph.numSubsets = numSubsets
+        graph.subsets = copy.deepcopy(subsets)
+
+        results.append(contract(graph))
+
+        if i % 100 == 0:
+            print('Progress: iteration %d/%d' %(i, iterations), end='\r')
+
     t1 = time.time()
     print('results = %s' %results)
     print('min cut = %d' %(min(results)))
