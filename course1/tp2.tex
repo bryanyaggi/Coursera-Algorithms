@@ -1,5 +1,5 @@
 \documentclass[10pt]{article}
-\usepackage{fullpage,enumitem,amsmath,amssymb,graphicx,listings,tikz,bbm,xcolor}
+\usepackage{fullpage,enumitem,amsmath,amssymb,graphicx,listings,tikz,bbm,xcolor,algorithm2e}
 \setlength{\parindent}{0pt}
 
 \begin{document}
@@ -80,14 +80,83 @@ See CLRS Problem 8-1 and solution.
 Suppose we modify the deterministic linear-time selection algorithm by grouping the elements into groups of 7, rather than groups of 5. (Use the ``median-of-medians" as the pivot, as before.) Does the algorithm still run in $O(n)$ time? What if we use groups of 3?
 \bigskip
 
-Answer...
+In lecture, a 2D grid representation was used to show the problem size reduction of the second recursive call in the DSelect algorithm. In the grid, each column represents a group and subscripts indicate the order for each group. The groups are placed in ascending order by their median elements. When the ``median-of-medians'' is selected, the southwest quadrant of elements is guaranteed to be less than or equal to this element. Likewise, the northeast quadrant of elements is guaranteed to be greater than or equal. The following is an example grid using groups of 5.
+
+$$
+\begin{matrix}
+	a_5 & b_5 & c_5 & d_5 & e_5 & f_5\\
+	a_4 & b_4 & c_4 & d_4 & e_4 & f_4\\
+	\textcolor{blue}{a_3} & \textcolor{blue}{b_3} & \textcolor{red}{c_3} & d_3 & e_3 & f_3\\
+	\textcolor{blue}{a_2} & \textcolor{blue}{b_2} & \textcolor{blue}{c_2} & d_2 & e_2 & f_2\\
+	\textcolor{blue}{a_1} & \textcolor{blue}{b_1} & \textcolor{blue}{c_1} & d_1 & e_1 & f_1 
+\end{matrix}
+$$
+
+The red element is the ``median-of-medians'' and the blue elements are those guaranteed to be smaller than or equal to it. This means that the number of elements remaining will be $\leq .7n$. The result is $T(n) \leq Cn + T(\frac{n}{5}) + T(\frac{7}{10} n) = O(n)$.
+\smallskip
+
+For groups of 7:
+
+$$
+\begin{matrix}
+	a_7 & b_7 & c_7 & d_7 & e_7 & f_7\\
+	a_6 & b_6 & c_6 & d_6 & e_6 & f_6\\
+	a_5 & b_5 & c_5 & d_5 & e_5 & f_5\\
+	\textcolor{blue}{a_4} & \textcolor{blue}{b_4} & \textcolor{red}{c_4} & d_4 & e_4 & f_4\\
+	\textcolor{blue}{a_3} & \textcolor{blue}{b_3} & \textcolor{blue}{c_3} & d_3 & e_3 & f_3\\
+	\textcolor{blue}{a_2} & \textcolor{blue}{b_2} & \textcolor{blue}{c_2} & d_2 & e_2 & f_2\\
+	\textcolor{blue}{a_1} & \textcolor{blue}{b_1} & \textcolor{blue}{c_1} & d_1 & e_1 & f_1 
+\end{matrix}
+$$
+
+$T(n) \leq Cn + T(\frac{n}{7}) + T(\frac{5}{7} n) = O(n)$
+\smallskip
+
+For groups of 3:
+
+$$
+\begin{matrix}
+	a_3 & b_3 & c_3 & d_3 & e_3 & f_3\\
+	\textcolor{blue}{a_2} & \textcolor{blue}{b_2} & \textcolor{red}{c_2} & d_2 & e_2 & f_2\\
+	\textcolor{blue}{a_1} & \textcolor{blue}{b_1} & \textcolor{blue}{c_1} & d_1 & e_1 & f_1 
+\end{matrix}
+$$
+
+$T(n) \leq Cn + T(\frac{n}{3}) + T(\frac{2}{3} n) > O(n)$
 
 \section*{\normalsize Problem 3}
 
 Given an array of $n$ distinct (but unsorted) elements $x_1, x_2, \dots, x_n$​ with positive weights $w_1, w_2, \dots, w_n$​ such that $\sum_{i=1}^{n} w_i = W$, a weighted median is an element $x_k$​ for which the total weight of all elements with value less than $x_k$​ (i.e., $\sum_{x_i < x_k}$) is at most $W/2$, and also the total weight of elements with value larger than $x_k$​ (i.e., $\sum_{x_i > x_k}$) is at most $W/2$. Observe that there are at most two weighted medians. Show how to compute all weighted medians in $O(n)$ worst-case time.
 \bigskip
 
-Answer...
+This can be achieved using an algorithm based on quickselect. The pivot element should be chosen using deterministic selection. Here is pseudocode for the algorithm. $elements$ is a data structure containing the value and weight of each element, $W$ is the sum of weights, $W_{left}$ is the sum of elements to the left of the pivot, and $value(pivot)$ is the value of the pivot element.
+\smallskip
+
+\SetKwProg{Fn}{Function}{}{end}
+\SetKwFunction{FRecurs}{FindMedians}
+\newcommand{\forcond}{$i=0$ \KwTo $n$}
+
+\Fn(){\FRecurs{elements, W, startIndex, endIndex}}{
+	\KwIn{\\
+	$elements$ is data structure containing value and weight of each element\\
+	$W$ is sum of weights\\
+	$startIndex$ is start index of elements involved\\
+	$endIndex$ is end index of elements involved}
+	\KwOut{\\weighted medians}
+	\BlankLine
+	
+	{pick pivot element using deterministic select}\\
+	{partition elements based on element values}\\
+	\If(\tcc*[h]{$W_{left}$ is sum of element weights to left of pivot}){$W_{left} > \frac{W}{2}$}{\FRecurs{elements, W, startIndex, pivotIndex}\;
+		\tcc{recurse on left side of pivot element}
+	}
+	\If(\tcc*[h]{$value(pivot)$ is the value of the pivot element}){$W_{left} + value(pivot) \leq \frac{W}{2}$}{\FRecurs{elements, W, pivotIndex+1, endIndex}\;
+		\tcc{recurse on right side of pivot element}
+	}
+	{left weighted median found}\\
+	\If(\tcc*[h]{$value(pivot)$ is the value of the pivot element}){$W - W_{left} - value(pivot) > \frac{W}{2}$}{right weighted median is smallest element of those right of pivot\;
+	}
+}
 
 \section*{\normalsize Problem 4}
 
