@@ -1,5 +1,5 @@
 \documentclass[10pt]{article}
-\usepackage{fullpage,enumitem,amsmath,amssymb,graphicx,listings,tikz,bbm,xcolor,algorithm2e}
+\usepackage{fullpage,enumitem,amsmath,amssymb,graphicx,listings,tikz,bbm,xcolor,algorithm2e,hyperref}
 \setlength{\parindent}{0pt}
 
 \begin{document}
@@ -161,15 +161,37 @@ This can be achieved using an algorithm based on quickselect. The pivot element 
 \section*{\normalsize Problem 4}
 
 We showed in an optional video lecture that every undirected graph has only polynomially (in the number $n$ of vertices) different minimum cuts. Is this also true for directed graphs? Prove it or give a counterexample.
-\bigskip
+\smallskip
 
-Answer...
+An undirected graph can have a maximum of $\binom{n}{2}$ minimum cuts, as shown in lecture. A directed graph will always have less than or equal the number of minimum cuts in its undirected representation. To show this, an undirected graph can be converted into a directed graph by replacing each edge with 2 opposite directed edges. The number of minimum cuts in the resulting graph is the same as before. As directed edges going in the direction of interest are removed, the number of minimum cuts decreases.
 
 \section*{\normalsize Problem 5}
 
 For a parameter $\alpha \geq 1$, an $\alpha$-minimum cut is one for which the number of crossing edges is at most $\alpha$ times that of a minimum cut. How many $\alpha$-minimum cuts can an undirected graph have, as a function of $\alpha$ and the number $n$ of vertices? Prove the best upper bound that you can.
 \bigskip
 
-Answer...
+Similar to the proof of the upper bound of minimum cuts in lecture, the upper bound of $\alpha$-minimum cuts can be shown by analyzing the probability that a particular $\alpha$-minimum cut is reached by the contraction algorithm. Let the contraction algorithm stop early so that the number of remaining nodes is sufficient to ensure that any $\alpha$-minimum cut is possible. By the handshaking lemma, the sum of the degrees of each node equals twice the number of edges in the graph: $\sum_{n \in N} deg(n) = 2|E|$ where $n$ is a node, $N$ is the set of nodes, and $E$ is the set of edges. To ensure any $\alpha$-minimum cut is possible, the number of remaining nodes, $r$, must be $2 \alpha$. $\sum_{i=1}^{r} c = 2 \alpha c \implies r = 2 \alpha$. With $r$ nodes remaining, there are $\frac{2^r - 2}{2}$ unique cuts possible. Let $X_i$ be the event such that an edge that lies in the $\alpha$-minimum cut is selected in the $i$th iteration of the contraction algorithm.
+
+\begin{align*}
+	P[X_i] &= \frac{\alpha c}{\frac{(n - i + 1)c}{2}} = \frac{2 \alpha}{n - i + 1} \\
+	P[\bar{X_i}] &= 1 - P[X_i] = \frac{n - i + 1 - 2 \alpha}{n - i + 1}
+\end{align*}
+
+Let $Y$ be the event such that an $\alpha$-minimum cut is achieved by the contraction algorithm. Once there are $r$ remaining nodes, the probability that a particular $\alpha$-minimum cut is reached is $\frac{2}{2^r - 2}$.
+
+\begin{align*}
+	P[Y] &= P[particular \ \alpha minimum \ cut] P[\bar{X_1} \wedge \dots \wedge \bar{X_{n-r}}] \\ \\
+	P[\bar{X_1} \wedge \dots \wedge \bar{X_{n-r}}] &= \prod_{i=1}^{n-r} \frac{n - i + 1 - 2 \alpha}{n - i + 1} \\
+	&= \frac{(n - 2\alpha)(n - 2\alpha) \dots (r - 2\alpha + 1)}{(n)(n - 1) \dots (r + 1)} \\
+	& numerator = \frac{(n - 2\alpha)!}{(r - 2\alpha)!} \\
+	& denominator = \frac{n!}{r!} \\
+	&= \frac{(n - 2\alpha)!}{(r - 2\alpha)!} \frac{r!}{n!} \\ \\
+	P[Y] &= \frac{2}{2^r - 2} \frac{(n - 2\alpha)!}{(r - 2\alpha)!} \frac{r!}{n!}
+\end{align*}
+
+$P[Y]$ can be bounded below by $\frac{2}{n^{2\alpha}}$. Since $Y$ events are disjoint, the number of $\alpha$-minimum cuts is upper bounded by $\frac{n^{2\alpha}}{2}$.
+\smallskip
+
+See University of British Columbia CPCS 536N lecture notes: \href{https://www.cs.ubc.ca/~nickhar/W13/Scribe/Lecture7Scribe.pdf}{link}.
 
 \end{document}
