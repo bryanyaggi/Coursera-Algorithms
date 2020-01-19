@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
-import random
-import copy
+import sys
+import threading
 import time
+
+# Hitting limits if the following are not modified
+sys.setrecursionlimit(800000)
+threading.stack_size(67108864)
 
 '''
 Programming Assignment 1
@@ -41,17 +45,31 @@ class Graph:
     def __init__(self):
         self.nodes = {}
         self.nodeOrder = []
+        self.sccs = {}
 
+    '''
+    Adds node to graph.
+    node is integer node ID
+    '''
     def addNode(self, node):
         if node not in self.nodes:
             self.nodes[node] = {'in': set(), 'out': set()}
 
+    '''
+    Adds edge to graph.
+    srcNode is integer node ID of source node
+    destNode is integer node ID of destination node
+    '''
     def addEdge(self, srcNode, destNode):
         self.addNode(srcNode)
         self.addNode(destNode)
         self.nodes[srcNode]['out'].add(destNode)
         self.nodes[destNode]['in'].add(srcNode)
 
+    '''
+    Calculates valid node order for finding SCCs. This function runs the first
+    "DFS-Loop" discussed in lecture.
+    '''
     def calcNodeOrder(self):
         self.nodeOrder = [] # reset
         explored = set()
@@ -66,10 +84,42 @@ class Graph:
         for node in self.nodes:
             if node not in explored:
                 dfs(node)
-    
-    def __repr__(self):
-        return ('Graph(nodes: %s)'
-                %(self.nodes))
+
+    '''
+    Calculates SCCs. This function runs the second "DFS-Loop" discussed in
+    lecture.
+    '''
+    def calcSccs(self):
+        self.sccs = {} # reset
+        explored = set()
+        leader = -1
+
+        def dfs(node):
+            explored.add(node)
+            if node == leader:
+                self.sccs[leader] = set()
+            else:
+                self.sccs[leader].add(node)
+            for destNode in self.nodes[node]['out']:
+                if destNode not in explored:
+                    dfs(destNode)
+
+        for i in range(len(self.nodeOrder)-1, -1, -1):
+            if self.nodeOrder[i] not in explored:
+                leader = self.nodeOrder[i]
+                dfs(leader)
+
+    '''
+    Prints 5 largest SCC sizes.
+    '''
+    def printSccSizes(self):
+        sccSizes = []
+        for scc in self.sccs:
+            sccSizes.append(len(self.sccs[scc])+1)
+        sccSizes.sort(reverse=True)
+        for i in range(4):
+            sccSizes.append(0)
+        print('5 largest SCCs: %s' %(sccSizes[:5]))
 
 def readFile(filename):
     graph = Graph()
@@ -100,9 +150,18 @@ def testGraph():
 
     return graph
 
-if __name__ == '__main__':
-    #graph = readFile('SCC.txt')
-    graph = testGraph()
-    print(graph)
+def main():
+    t0 = time.time()
+    graph = readFile('SCC.txt')
+    #graph = testGraph()
+    #print(graph.nodes)
     graph.calcNodeOrder()
-    print(graph.nodeOrder)
+    #print(graph.nodeOrder)
+    graph.calcSccs()
+    #print(graph.sccs)
+    graph.printSccSizes()
+    print('total time = %f' %(time.time() - t0))
+
+if __name__ == '__main__':
+    thread = threading.Thread(target=main)
+    thread.start()
