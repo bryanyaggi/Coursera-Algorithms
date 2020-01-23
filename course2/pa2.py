@@ -47,12 +47,11 @@ the heap.
 Class to store graph information.
 '''
 class Graph:
-
-    def __init__(self, sourceNode=1, maxLength=1000000):
+    def __init__(self, sourceNode=1, maxDistance=1000000):
         self.nodes = {}
         self.distances = {}
         self.sourceNode = sourceNode
-        self.maxLength = maxLength
+        self.maxDistance = maxDistance
 
     '''
     Adds node to graph.
@@ -66,40 +65,51 @@ class Graph:
     Adds edge to graph.
     srcNode is integer node ID of source node
     destNode is integer node ID of destination node
-    length is length from source to destination nodes
+    length is length from source to destination node
     '''
     def addEdge(self, srcNode, destNode, length):
         self.addNode(srcNode)
         self.addNode(destNode)
         self.nodes[srcNode][destNode] = length
 
+    '''
+    Runs Dijkstra's algorithm updating distances to each node.
+    '''
     def dijkstras(self):
         self.distances = {} # reset
+        self.distances[self.sourceNode] = 0
         
-        hd = heapdict() # initialize heapdict
+        hd = heapdict() # initialize heap
         for node in self.nodes:
             if node == self.sourceNode:
                 hd[node] = 0
             else:
-                hd[node] = self.maxLength
-
-        for key in hd:
-            print(key)
-        
+                hd[node] = self.maxDistance
+ 
         if self.sourceNode not in hd:
             print('dijkstras error: No source node.')
             return
 
-        distance = 0
         while(hd): # not empty
-            node, length = hd.popitem()
-            distance += length
+            node, distance = hd.popitem()
             self.distances[node] = distance
-
+            
+            # Update frontier nodes
             for neighbor in self.nodes[node]:
                 if neighbor in hd:
-                    if self.nodes[node][neighbor] < hd[neighbor]:
-                        hd[neighbor] = self.nodes[node][neighbor]
+                    newDistance = distance + self.nodes[node][neighbor]
+                    if newDistance < hd[neighbor]:
+                        hd[neighbor] = newDistance
+
+    '''
+    Prints assignment results.
+    '''
+    def printResults(self):
+        selectNodes = [7, 37, 59, 82, 99, 115, 133, 165, 188, 197]
+        selectDistances = []
+        for node in selectNodes:
+            selectDistances.append(self.distances[node])
+        print('results: %s' %selectDistances)
 
 def readFile(filename):
     graph = Graph()
@@ -130,9 +140,11 @@ def testGraph():
 
 if __name__ == '__main__':
     t0 = time.time()
-    #graph = readFile('dijkstraData.txt')
-    graph = testGraph()
-    print(graph.nodes)
+    #graph = testGraph()
+    #graph = readFile('dijkstraTest.txt')
+    graph = readFile('dijkstraData.txt')
+    #print(graph.nodes)
     graph.dijkstras()
-    print(graph.distances)
+    #print(graph.distances)
+    graph.printResults()
     print('total time = %f' %(time.time() - t0))
