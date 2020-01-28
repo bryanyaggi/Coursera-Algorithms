@@ -25,7 +25,7 @@ search-tree-based implementations of the algorithm.
 '''
 
 '''
-Class that implement median maintenance algorithm.
+Class that implements median maintenance algorithm.
 '''
 class MedianMaintainer:
     def __init__(self, stream):
@@ -34,24 +34,45 @@ class MedianMaintainer:
         self.maxHeap = []
         self.medians = []
 
+    '''
+    Pushes element to min heap.
+    '''
     def pushMinHeap(self, element):
         heapq.heappush(self.minHeap, element)
 
+    '''
+    Pushes element to max heap.
+    '''
     def pushMaxHeap(self, element):
         heapq.heappush(self.maxHeap, -element)
 
+    '''
+    Pops min element from min heap.
+    '''
     def popMinHeap(self):
         return heapq.heappop(self.minHeap)
 
+    '''
+    Pops max element from max heap.
+    '''
     def popMaxHeap(self):
         return -heapq.heappop(self.maxHeap)
 
+    '''
+    Returns the value of min element in the min heap.
+    '''
     def peekMinHeap(self):
         return self.minHeap[0]
 
+    '''
+    Returns the value of max element in the max heap.
+    '''
     def peekMaxHeap(self):
         return -self.maxHeap[0]
 
+    '''
+    Inserts element into data structure.
+    '''
     def insertElement(self, element):
         if len(self.maxHeap) == 0:
             self.pushMaxHeap(element)
@@ -60,6 +81,9 @@ class MedianMaintainer:
         else:
             self.pushMinHeap(element)
 
+    '''
+    Balances max and min heaps so median can be determined.
+    '''
     def balanceHeaps(self):
         balanced = False
 
@@ -88,6 +112,9 @@ class MedianMaintainer:
 
         return maxHeapSize, minHeapSize
 
+    '''
+    Returns the median element.
+    '''
     def getMedian(self):
         maxHeapSize, minHeapSize = self.balanceHeaps()
         median = 0
@@ -109,11 +136,17 @@ class MedianMaintainer:
 
         return median
 
+    '''
+    Processes the next element in the stream.
+    '''
     def processNext(self):
         element = self.stream.pop()
         self.insertElement(element)
         return self.getMedian()
 
+    '''
+    Processes the complete stream. Prints debugging information if verbose set.
+    '''
     def processStream(self, verbose=False):
         if verbose:
             print('stream = %s' %self.stream)
@@ -127,6 +160,9 @@ class MedianMaintainer:
         if verbose:
             print('medians = %s' %self.medians)
 
+    '''
+    Calculates the last 4 digits of the sum of medians.
+    '''
     def calcResult(self):
         summation = 0
         for median in self.medians:
