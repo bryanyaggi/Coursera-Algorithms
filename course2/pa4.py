@@ -58,6 +58,7 @@ def calcResult(integers, interval=[-10000, 10000], verbose=False):
                     print('x = %d, y = %d, t = %d' %(x, y, t))
                 total += 1
                 break
+    print()
     return total
 
 '''
