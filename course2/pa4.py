@@ -82,7 +82,8 @@ def calcResultAlt(integers, interval=[-10000, 10000], verbose=False):
             print('x = %d, y_min = %d, y_max = %d' %(x, sortedInts[yMinInd],
                 sortedInts[yMaxInd-1]))
         for i in range(yMinInd, yMaxInd):
-            sums.add(x + sortedInts[i])
+            if sortedInts[i] != x:
+                sums.add(x + sortedInts[i])
     return len(sums)
 
 def testIntegers():
