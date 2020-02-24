@@ -104,7 +104,7 @@ class UnionFind:
     def __repr__(self):
         return 'UnionFind(subsets: %s)' %self.subsets
 
-    def len(self):
+    def length(self):
         return len(self.subsets)
 
     def add(self, parent):
@@ -139,12 +139,24 @@ class UnionFind:
 Class to store graph information. Implements union-find data structure. 
 '''
 class Graph:
-    def __init__(self, filename):
+    def __init__(self, filename, hamming=False):
         self.nodes = UnionFind()
-        self.edges = {}
-        self.readFile(filename)
 
-    def readFile(self, filename):
+        # instance variables for edge cost file
+        self.edges = {}
+
+        # instance variables for  hamming file
+        self.nodeValues = {}
+        self.numBits = 0
+        self.hammingMasks = {}
+
+        # read file
+        if hamming:
+            self.readFile2(filename)
+        else:
+            self.readFile1(filename)
+
+    def readFile1(self, filename):
         with open(filename) as f:
             lines = f.readlines()
 
@@ -156,6 +168,24 @@ class Graph:
             else:
                 line = lines[i].split()
                 self.addEdge(int(line[0])-1, int(line[1])-1, int(line[2]))
+    
+    def readFile2(self, filename):
+        with open(filename) as f:
+            lines = f.readlines()
+
+        for i in range(len(lines)):
+            line = lines[i].split()
+            if i == 0:
+                numNodes = int(line[0])
+                self.numBits = int(line[1])
+                for j in range(numNodes):
+                    self.nodes.add(j)
+            else:
+                value = int(''.join(line), 2)
+                if value not in self.nodeValues:
+                    self.nodeValues[value] = [i-1]
+                else:
+                    self.nodeValues[value].append(i-1)
 
     '''
     Adds an edge to the graph.
@@ -165,8 +195,8 @@ class Graph:
     '''
     def addEdge(self, node1, node2, cost):
         assert node1 != node2, 'Cannot create edge between node and itself.'
-        assert node1 < self.nodes.len(), 'First node index too large.'
-        assert node2 < self.nodes.len(), 'Second node index too large.'
+        assert node1 < self.nodes.length(), 'First node index too large.'
+        assert node2 < self.nodes.length(), 'Second node index too large.'
 
         nodes = (0, 0)
         if node1 < node2:
@@ -177,7 +207,7 @@ class Graph:
         self.edges[nodes] = cost
 
     def cluster(self, k):
-        assert k <= self.nodes.len(), 'k too large.'
+        assert k <= self.nodes.length(), 'k too large.'
         assert k >= 0, 'k must be positive.'
 
         edgesSorted = sorted(self.edges, key=self.edges.get, reverse=False)
@@ -202,6 +232,47 @@ class Graph:
         print('No maximum spacing found.')
         return -1
 
-if __name__ == '__main__':
+    def calcHammingMasks(self):
+        self.hammingMasks[0] = [0]
+        self.hammingMasks[1] = [1 << i for i in range(self.numBits)]
+        self.hammingMasks[2] = []
+        for i in range(len(self.hammingMasks[1])-1):
+            for j in range(i+1, len(self.hammingMasks[1])):
+                mask = self.hammingMasks[1][i] | self.hammingMasks[1][j]
+                self.hammingMasks[2].append(mask)
+
+    def cluster2(self):
+        self.calcHammingMasks()
+        processedValues = set() 
+
+        for value in self.nodeValues:
+            node = self.nodeValues[value][0]
+
+            # Union nodes that have the same hamming value
+            for i in range(len(self.nodeValues[value])-1, 0, -1):
+                self.nodes.union(self.nodeValues[value][i], node)
+
+            # Union nodes 1 and 2 hamming distances away
+            for i in range(1, len(self.hammingMasks)):
+                for mask in self.hammingMasks[i]:
+                    target = value ^ mask
+                    if target in self.nodeValues:
+                        self.nodes.union(self.nodeValues[target][0], node)
+
+            processedValues.add(value)
+
+
+def runProblem1():
+    t0 = time.time()
     graph = Graph('clustering1.txt')
     print('p1 result = %s' %graph.cluster(4))
+    print('p1 time = %s s' %(time.time() - t0))
+
+
+if __name__ == '__main__':
+    runProblem1()
+    graph = Graph('clustering2Test.txt', hamming=True)
+    graph.calcHammingMasks()
+    #print(graph.hammingMasks)
+    graph.cluster2()
+    print(graph.nodes.numSubsets)
