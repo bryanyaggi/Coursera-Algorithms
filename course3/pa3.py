@@ -43,6 +43,9 @@ your Huffman code?
 
 '''
 
+'''
+Class to store node information for Huffman Code algorithm.
+'''
 class Node:
     def __init__(self, weight, symbol=None, leftNode=None, rightNode=None):
         self.weight = weight
@@ -56,6 +59,9 @@ class Node:
     def __repr__(self):
         return 'Node(weight: %s, symbol: %s)' %(self.weight, self.symbol)
 
+'''
+Class that implements Huffman Code algorithm.
+'''
 class HuffmanCode:
     def __init__(self, filename):
         self.codes = {}
@@ -75,23 +81,31 @@ class HuffmanCode:
                 self.heap.append(node)
         heapq.heapify(self.heap)
 
+    '''
+    Builds Huffman binary tree.
+    '''
     def _createTree(self):
         if len(self.heap) < 2:
             print('Symbol list too short.')
             return
         else:
             while len(self.heap) >= 2:
+                # Note that left and right ordering does not matter.
                 left = heapq.heappop(self.heap)
                 right = heapq.heappop(self.heap)
                 weight = left.weight + right.weight
                 heapq.heappush(self.heap,
                         Node(weight, leftNode=left, rightNode=right))
 
+    '''
+    Traverses Huffman binary tree recursively encoding symbols.
+    '''
     def _generateCodes(self):
         def recurse(node, code):
             if node.symbol is not None:
                 self.codes[code] = node.symbol
             else:
+                # Following convention
                 if node.leftNode is not None:
                     recurse(node.leftNode, code + '0')
                 if node.rightNode is not None:
@@ -101,6 +115,9 @@ class HuffmanCode:
         code = ''
         recurse(node, code)
         
+    '''
+    Prints range of code bit lengths
+    '''
     def printBitLengthRange(self):
         codes = list(self.codes.keys())
         codes = sorted(codes, key=len)
@@ -148,6 +165,9 @@ independent set, and 0 otherwise. For example, if you think that the vertices 1,
 vertices are not, then you should enter the string 10011010 in the box below.
 '''
 
+'''
+Class that implements maximum weight independent set algorithm for path graphs.
+'''
 class Mwis:
     def __init__(self, filename):
         self._readFile(filename)
@@ -168,11 +188,18 @@ class Mwis:
                 self.vertices[i] = int(lines[i])
             self.A[1] = self.vertices[1]
 
+    '''
+    Uses dynamic programming to calculate MWIS value.
+    '''
     def _calcValue(self):
         for i in range(2, len(self.vertices)):
             self.A[i] = max(self.A[i-1], self.A[i-2] + self.vertices[i])
         self.value = self.A[-1]
 
+    '''
+    Traverses backwards through stored dynamic programming solutions to find
+    members.
+    '''
     def _findMembers(self):
         i = len(self.A) - 1
         while i >= 1:
