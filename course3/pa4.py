@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
 import numpy as np
+import sys
 import time
+
+# Hitting limits if the following are not modified
+sys.setrecursionlimit(10000)
 
 '''
 Programming Assignment 4
@@ -70,6 +74,9 @@ ADVICE: If you're not getting the correct answer, try debugging your algorithm
 using some small test cases. And then post them to the discussion forum!
 '''
 
+'''
+Class to represent item for knapsack problem
+'''
 class Item:
     def __init__(self, value, weight):
         self.value = value
@@ -78,6 +85,9 @@ class Item:
     def __repr__(self):
         return 'Item(value: %s, weight: %s)' %(self.value, self.weight)
 
+'''
+Class for solving knapsack problem
+'''
 class Knapsack:
     def __init__(self, filename):
         self.readFile(filename)
@@ -95,8 +105,11 @@ class Knapsack:
             else:
                 self.items.append(Item(int(line[0]), int(line[1])))
 
+    '''
+    Generic iterative bottom-up approach
+    '''
     def solveBottomUp(self, verbose=False):
-        # A stores value for give number of items and capacity
+        # A stores values for give number of items and capacity
         A = np.zeros((self.numItems + 1, self.capacity + 1))
         for i in range(1, A.shape[0]):
             for w in range(A.shape[1]):
@@ -111,8 +124,52 @@ class Knapsack:
             print(A)
         return A[-1, -1]
 
-    def solveTopDown(self):
-        pass
+    '''
+    Bottom-up approach using less space. Only need values for capacities with
+    current item and previous item.
+    '''
+    def solveBottomUpLessSpace(self, verbose=False):
+        A = [0] * (self.capacity + 1)
+        for i in range(1, self.numItems + 1):
+            B = [0] * (self.capacity + 1)
+            for w in range(len(A)):
+                item = self.items[i]
+                if w - item.weight < 0: # can't fit item
+                    B[w] = A[w] # don't add item
+                else:
+                    B[w] = max(
+                            A[w], # don't add item
+                            A[w - item.weight] + item.value) # add item
+            A = B[:]
+
+        if verbose:
+            print(A)
+        return A[-1]
+
+    '''
+    Recursive top-down approach. Only solves necessary subproblems; uses less
+    time and space.
+    '''
+    def solveTopDown(self, verbose=False):
+        cache = {}
+        def recurse(capacity, index):
+            if index > self.numItems:
+                return 0
+            if (capacity, index) in cache:
+                return cache[(capacity, index)]
+
+            item = self.items[index]
+            if capacity - item.weight < 0:
+                cache[(capacity, index)] = recurse(capacity, index + 1)
+            else:
+                cache[(capacity, index)] = max(
+                        recurse(capacity, index + 1),
+                        recurse(capacity - item.weight, index + 1) + item.value)
+            return cache[(capacity, index)]
+
+        if verbose:
+            print(cache)
+        return recurse(self.capacity, 1)
 
 def runProblem1():
     t0 = time.time()
@@ -122,7 +179,12 @@ def runProblem1():
     print('p1 time = %s' %(time.time() - t0))
 
 def runProblem2():
-    pass
+    t0 = time.time()
+    ks = Knapsack('knapsackBig.txt')
+    ans = ks.solveTopDown()
+    print('p2 result = %s' %ans)
+    print('p2 time = %s' %(time.time() - t0))
 
 if __name__ == '__main__':
     runProblem1()
+    runProblem2()
