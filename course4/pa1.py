@@ -36,6 +36,32 @@ shortest-path algorithms!
 OPTIONAL: Here is a bigger data set to play with: large.txt
 '''
 
+class Edge:
+    def __init__(self, startVertex, endVertex, length):
+        self.startVertex = startVertex
+        self.endVertex = endVertex
+        self.length = length
+
+def bellmanFord(vertices, edges, sourceVertex, inf=9999):
+    distances = {}
+    for vertex in vertices:
+        if vertex == sourceVertex:
+            distances[vertex] = 0
+        else:
+            distances[vertex] = inf
+
+    # Relax iteratively, last iteration checks for negative cycles
+    negativeCycle = False
+    for i in range(len(vertices)):
+        for edge in edges:
+            newDistance = distances[edge.startVertex] + edge.length
+            if newDistance < distances[edge.endVertex]:
+                if i == len(vertices) - 1:
+                    negativeCycle = True
+                distances[edge.endVertex] = newDistance
+
+    return negativeCycle, distances
+
 '''
 Class for solving all-pairs shortest path problems
 '''
@@ -43,7 +69,31 @@ class APSP:
     def __init__(self, filename, inf=9999):
         self.filename = filename
         self.inf = inf
+        self.vertices = {}
+        self.edges = []
         self.readFile(filename)
+
+    def _initializeDistanceMatrix(self):
+        self.distanceMatrix = np.full((self.numVertices, self.numVertices),
+                self.inf, dtype='float64')
+        for j in range(self.numVertices):
+            self.distanceMatrix[j, j] = 0
+
+    def _addVertex(self, vertex):
+        if vertex not in self.vertices:
+            self.vertices[vertex] = {}
+
+    def _addEdge(self, startVertex, endVertex, length):
+        # Add edge to distance matrix
+        self.distanceMatrix[startVertex, endVertex] = length
+        
+        # Add edge to vertex dictionary
+        self._addVertex(startVertex)
+        self._addVertex(endVertex)
+        self.vertices[startVertex][endVertex] = length
+
+        # Add edge to edge list
+        self.edges.append(Edge(startVertex, endVertex, length))
 
     def readFile(self, filename):
         with open(filename) as f:
@@ -54,15 +104,12 @@ class APSP:
             if i == 0:
                 self.numVertices = int(line[0])
                 self.numEdges = int(line[1])
-                self.distanceMatrix = np.full((self.numVertices,
-                    self.numVertices), self.inf, dtype='float64')
-                for j in range(self.numVertices):
-                    self.distanceMatrix[j, j] = 0
+                self._initializeDistanceMatrix()
             else:
                 startVertex = int(line[0]) - 1
                 endVertex = int(line[1]) - 1
                 length = int(line[2])
-                self.distanceMatrix[startVertex, endVertex] = length
+                self._addEdge(startVertex, endVertex, length)
     
     def floydWarshall(self):
         A = np.copy(self.distanceMatrix)
@@ -88,10 +135,27 @@ class APSP:
                 negativeCycle = True
                 break
 
-        return negativeCycle, A
+        return negativeCycle, A    
 
+    def _dijkstras(self):
+        pass
+    
     def johnsons(self):
         pass
+
+def testBellmanFord():
+    vertices = ['s', 'v', 'x', 'w', 't']
+    edges = []
+    edges.append(Edge('s', 'v', 2))
+    edges.append(Edge('s', 'x', 4))
+    edges.append(Edge('v', 'x', 1))
+    edges.append(Edge('v', 'w', 2))
+    edges.append(Edge('x', 't', 4))
+    edges.append(Edge('w', 't', 2))
+    sourceVertex = 's'
+
+    negativeCycle, distances = bellmanFord(vertices, edges, sourceVertex)
+    print('negativeCycle: %s, distances: %s' %(negativeCycle, distances))
 
 def runGraph(filename):
     t0 = time.time()
@@ -106,5 +170,11 @@ def runProblem():
     for filename in filenames:
         runGraph(filename)
 
+def runOptionalProblem():
+    filename = 'large.txt'
+    runGraph(filename)
+
 if __name__ == '__main__':
-    runProblem()
+    testBellmanFord()
+    #runProblem()
+    #runOptionalProblem()
