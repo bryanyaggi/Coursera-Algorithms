@@ -42,6 +42,10 @@ class Edge:
         self.endVertex = endVertex
         self.length = length
 
+    def __repr__(self):
+        return ('Edge(start: %s, end: %s, length: %s)'
+                %(self.startVertex, self.endVertex, self.length))
+
 def bellmanFord(vertices, edges, sourceVertex, inf=9999):
     distances = {}
     for vertex in vertices:
@@ -61,6 +65,9 @@ def bellmanFord(vertices, edges, sourceVertex, inf=9999):
                 distances[edge.endVertex] = newDistance
 
     return negativeCycle, distances
+
+def dijkstras(self):
+    pass
 
 '''
 Class for solving all-pairs shortest path problems
@@ -136,12 +143,18 @@ class APSP:
                 break
 
         return negativeCycle, A    
-
-    def _dijkstras(self):
-        pass
     
     def johnsons(self):
-        pass
+        vertices = list(self.vertices.keys())
+        edges = self.edges.copy()
+
+        newVertex = -1
+        for vertex in vertices:
+            edges.append(Edge(newVertex, vertex, 0))
+        vertices.append(newVertex)
+
+        negativeCycle, distances = bellmanFord(vertices, edges, newVertex)
+        return negativeCycle
 
 def testBellmanFord():
     vertices = ['s', 'v', 'x', 'w', 't']
@@ -157,7 +170,7 @@ def testBellmanFord():
     negativeCycle, distances = bellmanFord(vertices, edges, sourceVertex)
     print('negativeCycle: %s, distances: %s' %(negativeCycle, distances))
 
-def runGraph(filename):
+def runGraphFloydWarshall(filename):
     t0 = time.time()
     g = APSP(filename)
     negativeCycle, A = g.floydWarshallVectorized()
@@ -165,16 +178,25 @@ def runGraph(filename):
     print('%s: negative cycle: %s, shortest path length: %s, time: %s'
             %(filename, negativeCycle, shortestPathLength, time.time() - t0))
 
+def runGraphJohnsons(filename):
+    t0 = time.time()
+    g = APSP(filename)
+    negativeCycle = g.johnsons()
+    print('%s: negative cycle: %s, time: %s'
+            %(filename, negativeCycle, time.time() - t0))
+
 def runProblem():
     filenames = ['g1.txt', 'g2.txt', 'g3.txt']
     for filename in filenames:
-        runGraph(filename)
+        #runGraphFloydWarshall(filename)
+        runGraphJohnsons(filename)
 
 def runOptionalProblem():
     filename = 'large.txt'
     runGraph(filename)
 
 if __name__ == '__main__':
-    testBellmanFord()
-    #runProblem()
+    #testBellmanFord()
+    #runGraphJohnsons('g3Test.txt')
+    runProblem()
     #runOptionalProblem()
