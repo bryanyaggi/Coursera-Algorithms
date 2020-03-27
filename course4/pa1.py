@@ -3,6 +3,8 @@
 import numpy as np
 import multiprocessing as mp
 import time
+from heapdict import heapdict
+import copy
 
 '''
 Programming Assignment 1
@@ -36,6 +38,9 @@ shortest-path algorithms!
 OPTIONAL: Here is a bigger data set to play with: large.txt
 '''
 
+'''
+Class for storing edge information
+'''
 class Edge:
     def __init__(self, startVertex, endVertex, length):
         self.startVertex = startVertex
@@ -46,8 +51,15 @@ class Edge:
         return ('Edge(start: %s, end: %s, length: %s)'
                 %(self.startVertex, self.endVertex, self.length))
 
+'''
+Bellman-Ford algorithm used by Johnson's algorithm
+
+vertices is a list of vertices
+edges is a list of edges
+returns whether negative cycle detected and list of distances to each vertex
+'''
 def bellmanFord(vertices, edges, sourceVertex, inf=9999):
-    distances = {}
+    distances = [inf] * len(vertices)
     for vertex in vertices:
         if vertex == sourceVertex:
             distances[vertex] = 0
@@ -66,8 +78,35 @@ def bellmanFord(vertices, edges, sourceVertex, inf=9999):
 
     return negativeCycle, distances
 
-def dijkstras(self):
-    pass
+'''
+Dijkstra's algorithm used by Johnson's algorithm
+
+vertices is a dictionary with adjacent vertices
+returns list of distances to each vertex
+'''
+def dijkstras(vertices, sourceVertex, inf=9999):
+    distances = [inf] * len(vertices)
+    distances[sourceVertex] = 0
+
+    hd = heapdict() # initialize heap
+    for vertex in vertices:
+        if vertex == sourceVertex:
+            hd[vertex] = 0
+        else:
+            hd[vertex] = inf
+
+    while(hd): # not empty
+        vertex, distance = hd.popitem()
+        distances[vertex] = distance
+
+        # Update frontier vertices
+        for neighbor in vertices[vertex]:
+            if neighbor in hd:
+                newDistance = distance + vertices[vertex][neighbor]
+                if newDistance < hd[neighbor]:
+                    hd[neighbor] = newDistance
+
+    return distances
 
 '''
 Class for solving all-pairs shortest path problems
@@ -78,7 +117,7 @@ class APSP:
         self.inf = inf
         self.vertices = {}
         self.edges = []
-        self.readFile(filename)
+        self._readFile(filename)
 
     def _initializeDistanceMatrix(self):
         self.distanceMatrix = np.full((self.numVertices, self.numVertices),
@@ -102,7 +141,7 @@ class APSP:
         # Add edge to edge list
         self.edges.append(Edge(startVertex, endVertex, length))
 
-    def readFile(self, filename):
+    def _readFile(self, filename):
         with open(filename) as f:
             lines = f.readlines()
 
@@ -118,6 +157,9 @@ class APSP:
                 length = int(line[2])
                 self._addEdge(startVertex, endVertex, length)
     
+    '''
+    Solves all pairs shortest path using naive Floyd-Warshall algorithm
+    '''
     def floydWarshall(self):
         A = np.copy(self.distanceMatrix)
 
@@ -132,6 +174,9 @@ class APSP:
 
         return negativeCycle, A
 
+    '''
+    Vectorized, faster Floyd-Warshall algorithm implementation
+    '''
     def floydWarshallVectorized(self):
         A = np.copy(self.distanceMatrix)
 
@@ -144,17 +189,43 @@ class APSP:
 
         return negativeCycle, A    
     
+    '''
+    Solves all pairs shortest path using Johnson's algorithm
+    '''
     def johnsons(self):
         vertices = list(self.vertices.keys())
         edges = self.edges.copy()
 
+        # Add vertex to graph and zero-length path to each vertex
         newVertex = -1
-        for vertex in vertices:
-            edges.append(Edge(newVertex, vertex, 0))
         vertices.append(newVertex)
+        for vertex in self.vertices:
+            edges.append(Edge(newVertex, vertex, 0))
 
-        negativeCycle, distances = bellmanFord(vertices, edges, newVertex)
-        return negativeCycle
+        # Bellman-Ford to find minimum path to each vertex
+        negativeCycle, bfDistances = bellmanFord(vertices, edges,
+                newVertex, inf=self.inf)
+        bfDistances = bfDistances[:-1] # remove element for extra vertex
+        
+        if negativeCycle:
+            return negativeCycle, None
+
+        # Reweigh edges (updating only vertices dictionary)
+        for edge in self.edges:
+            length = (edge.length + bfDistances[edge.startVertex] -
+                    bfDistances[edge.endVertex])
+            self.vertices[edge.startVertex][edge.endVertex] = length
+
+        # Dijkstra's from each vertex to find shortest paths
+        A = np.zeros((self.numVertices, self.numVertices))
+        for sourceVertex in self.vertices:
+            A[sourceVertex, :] = dijkstras(self.vertices, sourceVertex,
+                    inf=self.inf)
+
+        # Undo edge reweighting to retrieve actual distances (vectorized)
+        A = A + np.array(bfDistances) - np.array(bfDistances)[:, np.newaxis]
+        
+        return negativeCycle, A
 
 def testBellmanFord():
     vertices = ['s', 'v', 'x', 'w', 't']
@@ -181,14 +252,21 @@ def runGraphFloydWarshall(filename):
 def runGraphJohnsons(filename):
     t0 = time.time()
     g = APSP(filename)
-    negativeCycle = g.johnsons()
-    print('%s: negative cycle: %s, time: %s'
-            %(filename, negativeCycle, time.time() - t0))
+    negativeCycle, A = g.johnsons()
+    if A is not None:
+        shortestPathLength = A.min()
+    else:
+        shortestPathLength = None
+    print('%s: negative cycle: %s, shortest path length: %s, time: %s'
+            %(filename, negativeCycle, shortestPathLength, time.time() - t0))
 
 def runProblem():
     filenames = ['g1.txt', 'g2.txt', 'g3.txt']
+    print('Floyd-Warshall algorithm')
     for filename in filenames:
-        #runGraphFloydWarshall(filename)
+        runGraphFloydWarshall(filename)
+    print('Johnson\'s algorithm')
+    for filename in filenames:
         runGraphJohnsons(filename)
 
 def runOptionalProblem():
@@ -196,7 +274,5 @@ def runOptionalProblem():
     runGraph(filename)
 
 if __name__ == '__main__':
-    #testBellmanFord()
-    #runGraphJohnsons('g3Test.txt')
     runProblem()
     #runOptionalProblem()
