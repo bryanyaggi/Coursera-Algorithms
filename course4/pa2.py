@@ -3,7 +3,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-import itertools
 import time
 
 '''
@@ -66,6 +65,9 @@ class TSP:
     def _initializeDistanceMatrix(self):
         self.distanceMatrix = np.zeros((self.numCities, self.numCities))
 
+    '''
+    Calculates Euclidean distance between cities.
+    '''
     def euclideanDistance(self, index1, index2):
         city1 = self.cities[index1]
         city2 = self.cities[index2]
@@ -78,6 +80,9 @@ class TSP:
                 self.distanceMatrix[i, j] = distance
                 self.distanceMatrix[j, i] = distance
 
+    '''
+    Plots city coordinates.
+    '''
     def plotCities(self):
         x = []
         y = []
@@ -144,17 +149,20 @@ class TSP:
         return results
 
     '''
-    Solve TSP using Held-Karp algorithm
+    Solve TSP using Held-Karp algorithm.
+
+    costs dictionary keys are tuples containing binary string representing set
+    of cities and end city. Values are tuples containing cost and path. Cost is
+    the path cost from City 0 to end, passing through set of cities.
     '''
     def solve(self):
-        # Cost is path length from city 0 to end, passing through set of cities
-        costs = {}
-        parents = {}
+        costs = {} # stores cost and path information
 
         # Calculate costs for city sets of size 1
         for end in range(1, len(self.cities)):
             citySetBits = self._citiesToBits(set([end]))
-            costs[(citySetBits, end)] = self.distanceMatrix[0, end]
+            path = [0]
+            costs[(citySetBits, end)] = (self.distanceMatrix[0, end], path)
 
         # Calculate costs for larger city sets
         for citySetSize in range(2, len(self.cities)):
@@ -167,33 +175,55 @@ class TSP:
                     citySubsetBits = self._citiesToBits(citySubset)
                     candidates = []
                     for penultimate in citySubset:
-                        candidates.append(costs[(citySubsetBits, penultimate)] +
-                                self.distanceMatrix[penultimate, end])
+                        cost = costs[(citySubsetBits, penultimate)]
+                        path = cost[1].copy()
+                        path.append(penultimate)
+                        candidates.append((cost[0] +
+                            self.distanceMatrix[penultimate, end], path))
                     costs[(citySetBits, end)] = min(candidates)
 
+        # Calculate complete tour
         citySet = set(range(1, len(self.cities)))
         citySetBits = self._citiesToBits(citySet)
         candidates = []
-        for end in citySet:
-            candidates.append(costs[(citySetBits, end)] +
-                    self.distanceMatrix[end, 0])
+        for penultimate in citySet:
+            cost = costs[(citySetBits, penultimate)]
+            path = cost[1].copy()
+            path.append(penultimate)
+            candidates.append((cost[0] + self.distanceMatrix[penultimate, 0],
+                path))
         
-        return min(candidates)
+        tour, path = min(candidates)
+        return tour, path
 
-def runProblem():
+def runFinalProblem():
     g = TSP(filename='tsp.txt')
     g.plotCities()
+
     # Split graph into 2 parts
+    t0 = time.time()
     g1 = TSP(cities=g.cities[:13])
     g2 = TSP(cities=g.cities[11:])
-    tour1 = g1.solve()
-    print('tour1 = %s' %tour1)
-    tour2 = g2.solve()
-    print('tour2 = %s' %tour2)
+
+    tour1, path1 = g1.solve()
+    print('tour 1 = %s, path = %s' %(tour1, path1))
+    tour2, path2 = g2.solve()
+    path2 = [i + 11 for i in path2]
+    print('tour 2 = %s, path = %s' %(tour2, path2))
+
     commonPath = g1.euclideanDistance(11, 12)
-    print('common path length = %s' %commonPath)
+    print('common path (11 to 12) length = %s' %commonPath)
     tour = tour1 + tour2 - (2 * commonPath)
-    print('tour = %s' %tour)
+    print('tour = %s, time = %s' %(tour, time.time() - t0))
+
+def runTestProblems():
+    filenames = ['tspTest1.txt', 'tspTest2.txt', 'tspTest3.txt']
+    for filename in filenames:
+        g = TSP(filename=filename)
+        g.plotCities()
+        tour, path = g.solve()
+        print('%s: tour = %s, path = %s' %(filename, tour, path))
 
 if __name__ == '__main__':
-    runProblem()
+    #runTestProblems()
+    runFinalProblem()
