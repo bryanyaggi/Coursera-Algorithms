@@ -53,14 +53,20 @@ class City:
 Class for solving travelling salesman problems
 '''
 class TSP:
-    def __init__(self, filename):
-        self.cities = []
-        self._readFile(filename)
+    def __init__(self, filename=None, cities=None):
+        if filename is None:
+            self.cities = cities
+            self.numCities = len(cities)
+            self._initializeDistanceMatrix()
+            self._updateDistanceMatrix()
+        else:
+            self.cities = []
+            self._readFile(filename)
 
     def _initializeDistanceMatrix(self):
-        self.distanceMatrix = np.zeros((self.numVertices, self.numVertices))
+        self.distanceMatrix = np.zeros((self.numCities, self.numCities))
 
-    def _euclideanDistance(self, index1, index2):
+    def euclideanDistance(self, index1, index2):
         city1 = self.cities[index1]
         city2 = self.cities[index2]
         return math.sqrt((city1.x - city2.x) ** 2 + (city1.y - city2.y) ** 2)
@@ -68,11 +74,11 @@ class TSP:
     def _updateDistanceMatrix(self):
         for i in range(len(self.cities)):
             for j in range(i + 1, len(self.cities)):
-                distance = self._euclideanDistance(i, j)
+                distance = self.euclideanDistance(i, j)
                 self.distanceMatrix[i, j] = distance
                 self.distanceMatrix[j, i] = distance
 
-    def _plotCities(self):
+    def plotCities(self):
         x = []
         y = []
         labels = []
@@ -95,13 +101,12 @@ class TSP:
         for i in range(len(lines)):
             line = lines[i].split()
             if i == 0:
-                self.numVertices = int(line[0])
+                self.numCities = int(line[0])
                 self._initializeDistanceMatrix()
             else:
                 self.cities.append(City(float(line[0]), float(line[1])))
         
         self._updateDistanceMatrix()
-        #self._plotCities()
 
     def _citiesToBits(self, cities):
         bits = ['0'] * len(self.cities)
@@ -176,9 +181,19 @@ class TSP:
         return min(candidates)
 
 def runProblem():
-    g = TSP('tsp.txt')
-    tour = g.solve()
-    print(tour)
+    g = TSP(filename='tsp.txt')
+    g.plotCities()
+    # Split graph into 2 parts
+    g1 = TSP(cities=g.cities[:13])
+    g2 = TSP(cities=g.cities[11:])
+    tour1 = g1.solve()
+    print('tour1 = %s' %tour1)
+    tour2 = g2.solve()
+    print('tour2 = %s' %tour2)
+    commonPath = g1.euclideanDistance(11, 12)
+    print('common path length = %s' %commonPath)
+    tour = tour1 + tour2 - (2 * commonPath)
+    print('tour = %s' %tour)
 
 if __name__ == '__main__':
     runProblem()
