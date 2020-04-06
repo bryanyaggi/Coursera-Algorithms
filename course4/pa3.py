@@ -51,6 +51,7 @@ class City:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.visited = False
 
     def __repr__(self):
         return ('City(%s, %s)' %(self.x, self.y))
@@ -60,20 +61,15 @@ Class for approximating travelling salesman solution with nearest neighbor
 heuristic.
 '''
 class TSP:
-    def __init__(self, filename=None, cities=None, inf=9999):
+    def __init__(self, filename=None, lines=None, cities=None, inf=9999):
         self.inf = inf
         if filename is None:
             self.cities = cities
             self.numCities = len(cities)
-            self._initializeDistanceMatrix()
-            self._updateDistanceMatrix()
         else:
             self.cities = []
+            self.lines = lines
             self._readFile(filename)
-
-    def _initializeDistanceMatrix(self):
-        self.distanceMatrix = np.full((self.numCities, self.numCities),
-                self.inf, dtype='float64')
 
     '''
     Calculates Euclidean distance between cities.
@@ -83,22 +79,13 @@ class TSP:
         city2 = self.cities[index2]
         return math.sqrt((city1.x - city2.x) ** 2 + (city1.y - city2.y) ** 2)
 
-    def _updateDistanceMatrix(self):
-        for i in range(len(self.cities)):
-            for j in range(i + 1, len(self.cities)):
-                distance = self.euclideanDistance(i, j)
-                self.distanceMatrix[i, j] = distance
-                self.distanceMatrix[j, i] = distance
-   
-    def _updateDistanceMatrixT(self):
-        for i in range(len(self.cities)):
-            stop = i + 20
-            if stop > len(self.cities):
-                stop = len(self.cities)
-            for j in range(i + 1, stop):
-                distance = self.euclideanDistance(i, j)
-                self.distanceMatrix[i, j] = distance
-                self.distanceMatrix[j, i] = distance
+    '''
+    Calculates X coordinate distance between cities.
+    '''
+    def xDistance(self, index1, index2):
+        city1 = self.cities[index1]
+        city2 = self.cities[index2]
+        return abs(city1.x - city2.x)
 
     '''
     Plots city coordinates.
@@ -123,53 +110,90 @@ class TSP:
     def _readFile(self, filename):
         with open(filename) as f:
             lines = f.readlines()
+            numLines = len(lines)
+            if self.lines is not None:
+                if self.lines < numLines:
+                    numLines = self.lines
 
-        for i in range(len(lines)):
+        for i in range(numLines):
             line = lines[i].split()
             if i == 0:
-                self.numCities = int(line[0])
-                #self.numCities = 50
-                self._initializeDistanceMatrix()
+                #self.numCities = int(line[0])
+                self.numCities = numLines - 1
             else:
                 self.cities.append(City(float(line[1]), float(line[2])))
         
-        self._updateDistanceMatrix()
-
     '''
     Approximates solution using nearest neighbor heuristic.
     '''
     def solve(self):
-        visited = np.ones(self.numCities)
         tour = 0
-        
-        # Start at City 0
-        visited[0] = self.inf
-        path = [0]
+        path = [0] # start at City 0
+        self.cities[0].visited = True
 
         while len(path) < self.numCities:
+            print('Progress: %s/%s' %(len(path), self.numCities), end='\r')
+
             city = path[-1]
-            nextCity = (np.multiply(self.distanceMatrix[city, :],
-                visited)).argmin()
-            tour += self.distanceMatrix[city, nextCity]
+
+            # Find next city
+            minDistance = self.inf
+            nextCity = city
+            i = 1
+            stopForward = False
+            stopBackward = False
+            while not (stopForward and stopBackward):
+                # Search forward along x coordinate
+                if city + i > self.numCities - 1:
+                    stopForward = True
+                elif not self.cities[city + i].visited:
+                    distance = self.euclideanDistance(city, city + i)
+                    if distance == minDistance and city + i < nextCity:
+                        nextCity = city + i
+                    elif distance < minDistance:
+                        minDistance = distance
+                        nextCity = city + i
+                    elif self.xDistance(city, city + i) > minDistance:
+                        stopForward = True
+
+                # Search backward along x coordinate
+                if city - i < 0:
+                    stopBackward = True
+                elif not self.cities[city - i].visited:
+                    distance = self.euclideanDistance(city, city - i)
+                    if distance == minDistance and city - i < nextCity:
+                        nextCity = city - i
+                    elif distance < minDistance:
+                        minDistance = distance
+                        nextCity = city - i
+                    elif self.xDistance(city, city - i) > minDistance:
+                        stopBackward = True
+                i += 1
+
             path.append(nextCity)
-            visited[nextCity] = self.inf
+            self.cities[nextCity].visited = True
+            tour += minDistance
 
         # Return to City 0
         tour += self.euclideanDistance(path[-1], 0)
-
+        print('Progress: %s/%s' %(len(path), self.numCities), end='\r')
+        
+        print()
         return tour, path
 
-def runProblem(filename):
+def runProblem(filename, lines=None, printPath=False):
     t0 = time.time()
-    g = TSP(filename=filename)
+    g = TSP(filename=filename, lines=lines)
     t1 = time.time()
-    print('Updated distance matrix in %s s.' %(t1 - t0))
-    #g.plotCities()
+    g.plotCities()
 
     t2 = time.time()
     tour, path = g.solve()
     totalTime = time.time() - t2 + t1 - t0
-    print('tour = %s, path = %s, time = %s' %(tour, path, totalTime))
+    if printPath:
+        print('tour = %s, path = %s, time = %s' %(tour, path, totalTime))
+    else:
+        print('tour = %s, time = %s' %(tour, totalTime))
 
 if __name__ == '__main__':
     runProblem('nn.txt')
